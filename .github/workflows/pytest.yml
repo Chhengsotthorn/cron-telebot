@@ -1,36 +1,21 @@
-name: Run pytest
+from telegram import Bot
+from telegram.ext import Updater, CommandHandler
+import schedule
+import time
 
-on:
-  pull_request:
-    types:
-      - opened
-      - edited
-      - synchronize
-    branches:
-      - main
-  push:
+TOKEN = '8025928171:AAEH0pAVlD4Yh66nyx6un08ehUrVL2IHz9o'
+CHAT_ID = '-4596272485'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9"]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Switch to Current Branch
-        run: git checkout ${{ env.BRANCH }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run unit tests
-        run: python -m pytest tests/unit/
-      - name: Check code style with Black
-        run: black --check --diff .
+def send_message(context):
+    context.bot.send_message(chat_id=CHAT_ID, text="This is a scheduled message!")
+
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    job_queue = updater.job_queue
+    job_queue.run_daily(send_message, time=time(hour=12, minute=36))  # Schedule for 9:00 AM daily
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
