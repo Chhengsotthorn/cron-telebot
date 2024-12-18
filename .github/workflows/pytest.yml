@@ -1,36 +1,56 @@
-name: Run pytest
+# prompt: Connect to telegram API bot
 
-on:
-  pull_request:
-    types:
-      - opened
-      - edited
-      - synchronize
-    branches:
-      - main
-  push:
+import requests
+import time
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9"]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Switch to Current Branch
-        run: git checkout ${{ env.BRANCH }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run unit tests
-        run: python -m pytest tests/unit/
-      - name: Check code style with Black
-        run: black --check --diff .
+# Replace with your actual bot token
+BOT_TOKEN = "8025928171:AAEH0pAVlD4Yh66nyx6un08ehUrVL2IHz9o"  
+CHAT_ID = "-4596272485" # Replace with your chat ID
+
+
+def send_telegram_message(message):
+    """Sends a message to the specified Telegram chat."""
+
+    base_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    parameters = {
+        "chat_id": CHAT_ID,
+        "text": message
+    }
+    try:
+        resp = requests.get(base_url, data=parameters)
+        resp.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        print(f"Message sent successfully: {resp.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending message: {e}")
+
+
+def get_telegram_updates(offset=None):
+    """Retrieves updates from Telegram."""
+
+    base_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
+    parameters = {"timeout": 60}  # Set a timeout for the request
+    if offset:
+        parameters["offset"] = offset
+    try:
+        resp = requests.get(base_url, params=parameters)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting updates: {e}")
+        return None
+
+# Example Usage
+if __name__ == "__main__":
+    # Send a message
+    send_telegram_message("Hello from the bot!")
+
+    # Get updates (example: fetch new messages)
+    last_update_id = None
+    while True:
+        updates = get_telegram_updates(offset=last_update_id)
+        if updates and updates["ok"] and updates["result"]:
+          for update in updates["result"]:
+              last_update_id = update["update_id"] + 1
+              print(update) # Process each update here
+
+        time.sleep(5)  # Check for updates every 5 seconds
